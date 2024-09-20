@@ -1,32 +1,49 @@
-import React from "react";
-
+import React, { useEffect,useState, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
+import { ChatContext } from "../context/ChatContext";
 const Chats = () => {
+
+    const [chats, setChats] = useState([] )
+
+    const {currentUser} = useContext(AuthContext)
+    const {dispatch} = useContext(ChatContext)
+
+
+    useEffect(() => {
+        const getChats = () => {
+
+            const unsub = onSnapshot(doc(db, "userChats", currentUser.uid), (doc) => {
+                setChats(doc.data())
+            });
+            return () => {
+                unsub();
+            }
+        }
+
+        currentUser.uid && getChats()
+    },[currentUser.uid])
     
+    const handleSelect = (u) => {
+        dispatch({ type: "CHANGE_USER", payload: u })
+    }
+
+    console.log(Object.entries(chats))
     return (
-        
+
         <div className='chats'>
-            
-            <div className="userChat">
-                <img src="https://images.pexels.com/photos/27779028/pexels-photo-27779028/free-photo-of-a-view-of-a-small-town-on-the-water-with-mountains-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=400&lazy=load" alt="" />
+            {Object.entries(chats)?.sort((a,b)=> b[1].data - a[1].data).map((chat)=> (
+                
+                <div className="userChat" key = {chat[0]} onClick= {()=>handleSelect(chat[1].userInfo)}>
+                <img src={chat[1].userInfo.photoURL} alt="" />
                 <div className="userChatInfo">
-                    <span>Huz</span>
-                    <p>hello</p>
+                    <span>{chat[1].userInfo.displayName}</span>
+                    <p>{chat[1].lastMessage?.text}</p>
                 </div>   
             </div>
-            <div className="userChat">
-                <img src="https://images.pexels.com/photos/27779028/pexels-photo-27779028/free-photo-of-a-view-of-a-small-town-on-the-water-with-mountains-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=400&lazy=load" alt="" />
-                <div className="userChatInfo">
-                    <span>Huz</span>
-                    <p>hello</p>
-                </div>   
-            </div>
-            <div className="userChat">
-                <img src="https://images.pexels.com/photos/27779028/pexels-photo-27779028/free-photo-of-a-view-of-a-small-town-on-the-water-with-mountains-in-the-background.jpeg?auto=compress&cs=tinysrgb&w=400&lazy=load" alt="" />
-                <div className="userChatInfo">
-                    <span>Huz</span>
-                    <p>hello</p>
-                </div>   
-            </div>
+            ))}
+           
         </div>
     )
 }
